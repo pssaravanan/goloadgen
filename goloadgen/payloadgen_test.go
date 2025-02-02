@@ -2,6 +2,8 @@ package goloadgen
 
 import (
 	"testing"
+	"github.com/google/uuid"
+	"fmt"
 )
 
 // Mock function for rand.Intn
@@ -10,9 +12,9 @@ func mockRandIntn(n int) int {
 }
 
 func TestSimpleGeneratePayload(t *testing.T){
-	payload := GeneratePayload("{user_id: 1}")
+	payload := GeneratePayload(PayloadGenParams{TemplateStr: "{user_id: 1}"})
 	if payload != "{user_id: 1}" {
-		t.Errorf("Expected %v. Acual: %v", "{user_id: 1}", payload)
+		t.Errorf("Expected %v. Actual: %v", "{user_id: 1}", payload)
 	}
 }
 
@@ -24,8 +26,23 @@ func TestGeneratePayloadWithRandInt(t *testing.T){
 	// Restore the original function after the test
 	defer func() { randIntn = originalRandIntn }()
 
-	payload := GeneratePayload("{ user_id: {{randInt 5}} }")
+	payload := GeneratePayload(PayloadGenParams{TemplateStr: "{ user_id: {{randInt 5}} }"})
 	if payload != "{ user_id: 2 }" {
 		t.Errorf("Expected %v. Actual: %v", "{ user_id: 2 }", payload)
+	}
+}
+
+func TestGeneratePayloadWithRandUUID(t *testing.T){
+	uuidValue := uuid.New().String()
+	originalRandUUID := randUUID
+	randUUID = func() string {
+		return uuidValue
+	}
+
+	defer func() { randUUID = originalRandUUID }()
+	payload := GeneratePayload(PayloadGenParams{TemplateStr: "{ user_id: {{randUUID}} }"})
+	expected := fmt.Sprintf("{ user_id: %v }", uuidValue)
+	if payload != expected {
+		t.Errorf("Expected %v. Actual: %v", expected, payload)
 	}
 }

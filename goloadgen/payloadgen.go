@@ -3,28 +3,43 @@ package goloadgen
 import (
 	"fmt"
 	"math/rand"
+	"github.com/google/uuid"
 	"text/template"
 )
 
+// PayloadGenParams holds the parameters for generating payloads
+type PayloadGenParams struct {
+	TemplateStr string
+	SessionVar  map[string]string
+	Vars        map[string]string
+}
+
+// TemplateWriter is used to capture the output of the template execution
 type TemplateWriter struct {
 	body string
 }
 
 func (writer *TemplateWriter) Write(p []byte) (n int, err error) {
-	// fmt.Println("inside write", string(p))
-	writer.body = writer.body + string(p)
+	writer.body += string(p)
 	return len(p), nil
 }
 
 // Variable to hold the rand.Intn function, so it can be mocked in tests
 var randIntn = rand.Intn
 
-func GeneratePayload(templatestr string) string {
+// Variable to hold the UUID generation function, so it can be mocked in tests
+var randUUID = func() string {
+	return uuid.New().String()
+}
+
+// GeneratePayload generates a payload based on the provided parameters
+func GeneratePayload(params PayloadGenParams) string {
 	writer := &TemplateWriter{}
 	funcMap := template.FuncMap{
-		"randInt": randIntn,
+		"randInt":  randIntn,
+		"randUUID": randUUID,
 	}
-	tmpl, err := template.New("").Funcs(funcMap).Parse(templatestr)
+	tmpl, err := template.New("").Funcs(funcMap).Parse(params.TemplateStr)
 	if err != nil {
 		fmt.Println(err)
 		return ""
